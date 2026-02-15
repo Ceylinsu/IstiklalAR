@@ -60,34 +60,40 @@
         
       </a-entity>
     </a-scene>
-
     <script>
-      // Değişkenler
-      const startButton = document.querySelector("#start-button");
-      const overlay = document.querySelector("#scanning-overlay");
-      const video = document.querySelector("#istiklal-video");
-      const target = document.querySelector('#mydear-target');
+  const startButton = document.querySelector("#start-button");
+  const overlay = document.querySelector("#scanning-overlay");
+  const video = document.querySelector("#istiklal-video");
+  const sceneEl = document.querySelector('a-scene');
 
-      // 1. Kullanıcı Başlat butonuna basınca (Ses kilidini açmak için)
-      startButton.addEventListener('click', () => {
-        overlay.classList.add('hidden'); // Butonu gizle
-        video.play();  // Videoyu başlat
-        video.pause(); // Hemen durdur (Bu işlem tarayıcıya "ses çalabilirsin" izni verir)
-        video.currentTime = 0; // Videoyu başa sar
-      });
+  // Sahne yükleme hatası kontrolü
+  sceneEl.addEventListener("arError", (event) => {
+    alert("AR Başlatılamadı! Kamera izni veya dosya eksik olabilir.");
+  });
 
-      // 2. Resim (Target) bulunduğunda
-      target.addEventListener("targetFound", event => {
-        console.log("Hedef bulundu, video başlıyor...");
-        video.muted = false; // Sesi aç
-        video.play(); // Oynat
-      });
+  startButton.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+    video.play().then(() => {
+        video.pause();
+        video.currentTime = 0;
+        console.log("Ses kilidi açıldı");
+    }).catch(err => {
+        alert("Video başlatılamıyor: " + err);
+    });
+  });
 
-      // 3. Resim (Target) kaybolduğunda
-      target.addEventListener("targetLost", event => {
-        console.log("Hedef kayboldu, video duruyor...");
-        video.pause(); // Durdur
-      });
-    </script>
+  const target = document.querySelector('#mydear-target');
+  target.addEventListener("targetFound", () => {
+    video.play();
+    video.muted = false;
+  });
+
+  target.addEventListener("targetLost", () => {
+    video.pause();
+  });
+</script>
+
+    
   </body>
+
 </html>
