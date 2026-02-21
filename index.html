@@ -6,7 +6,6 @@
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
-      /* Ekranda belirecek "Başla" butonu. (Telefonlarda video sesinin açılması için ekrana dokunmak şarttır) */
       #startButton {
         position: absolute;
         bottom: 20px;
@@ -33,7 +32,7 @@
              device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="akif-video" src="./resim_video/akif.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
+        <video id="akif-video" src="./resim_video/akif.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -49,19 +48,29 @@
       const target = document.querySelector('[mindar-image-target]');
       const video = document.querySelector('#akif-video');
 
-      // Başla butonuna tıklandığında kamerayı başlat
+      // Başla butonuna tıklandığında...
       startButton.addEventListener('click', () => {
+        // İŞTE iOS İÇİN HAYAT KURTARAN KISIM:
+        // Ekrana dokunulduğu an videoyu sessizce başlatıp hemen durduruyoruz ki iOS'un ses kilidi kırılsın.
+        video.muted = true;
+        video.play().then(() => {
+          video.pause();
+          video.muted = false; // Sesini tekrar açıyoruz
+        }).catch((e) => {
+          console.log("Video kilidi açılamadı:", e);
+        });
+
         sceneEl.setAttribute('mindar-image', 'imageTargetSrc: ./resim_video/targets.mind; autoStart: true;');
         sceneEl.systems["mindar-image-system"].start(); // AR'ı başlat
         startButton.style.display = 'none'; // Butonu gizle
       });
 
-      // Kamera Mehmet Akif resmini YAKALADIĞINDA videoyu oynat
+      // Kamera resmi YAKALADIĞINDA videoyu oynat
       target.addEventListener("targetFound", event => {
         video.play();
       });
 
-      // Kamera Mehmet Akif resmini KAYBETTİĞİNDE videoyu durdur
+      // Kamera resmi KAYBETTİĞİNDE videoyu durdur
       target.addEventListener("targetLost", event => {
         video.pause();
       });
