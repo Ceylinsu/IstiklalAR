@@ -1,6 +1,6 @@
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <meta charset="utf-8" />
     <title>İstiklal AR Projesi</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -20,10 +20,26 @@
         z-index: 9999;
         cursor: pointer;
       }
+      /* iPhone'da kullanıcıya ne yapacağını söyleyen ufak bir bilgi yazısı */
+      #iosWarning {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0,0,0,0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-family: sans-serif;
+        text-align: center;
+        z-index: 9998;
+        display: none; /* Başlangıçta gizli */
+      }
     </style>
   </head>
   <body>
     <button id="startButton">Kamerayı Aç ve Başla</button>
+    <div id="iosWarning">Eğer ses gelmezse ekrana bir kez dokunun.</div>
 
     <a-scene mindar-image="imageTargetSrc: ./resim_video/targets.mind; autoStart: false;" 
              color-space="sRGB" 
@@ -38,40 +54,56 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-video src="#akif-video" position="0 0 0" height="1.2" width="1"></a-video>
+        <a-plane material="src: #akif-video" position="0 0 0" height="1.2" width="1"></a-plane>
       </a-entity>
     </a-scene>
 
     <script>
       const sceneEl = document.querySelector('a-scene');
       const startButton = document.querySelector('#startButton');
+      const iosWarning = document.querySelector('#iosWarning');
       const target = document.querySelector('[mindar-image-target]');
       const video = document.querySelector('#akif-video');
+      
+      let isTargetFound = false;
 
-      // Başla butonuna tıklandığında...
+      // 1. Başla butonuna tıklama olayı
       startButton.addEventListener('click', () => {
-        // İŞTE iOS İÇİN HAYAT KURTARAN KISIM:
-        // Ekrana dokunulduğu an videoyu sessizce başlatıp hemen durduruyoruz ki iOS'un ses kilidi kırılsın.
-        video.muted = true;
-        video.play().then(() => {
-          video.pause();
-          video.muted = false; // Sesini tekrar açıyoruz
-        }).catch((e) => {
-          console.log("Video kilidi açılamadı:", e);
-        });
+        // iOS kilidini kırmak için doğrudan bir kez başlatıp durduruyoruz
+        video.play();
+        setTimeout(() => { video.pause(); }, 100);
 
         sceneEl.setAttribute('mindar-image', 'imageTargetSrc: ./resim_video/targets.mind; autoStart: true;');
         sceneEl.systems["mindar-image-system"].start(); // AR'ı başlat
         startButton.style.display = 'none'; // Butonu gizle
+        iosWarning.style.display = 'block'; // Uyarı yazısını göster
       });
 
-      // Kamera resmi YAKALADIĞINDA videoyu oynat
+      // 2. Kullanıcı ekrana herhangi bir yere dokunduğunda (iOS'ta sesi zorla açmak için)
+      window.addEventListener('touchstart', () => {
+        if (isTargetFound) {
+          video.muted = false;
+          video.play();
+        }
+      });
+
+      window.addEventListener('click', () => {
+        if (isTargetFound) {
+          video.muted = false;
+          video.play();
+        }
+      });
+
+      // 3. Kamera resmi YAKALADIĞINDA
       target.addEventListener("targetFound", event => {
+        isTargetFound = true;
         video.play();
+        iosWarning.style.display = 'none'; // Resim bulununca uyarıyı gizle
       });
 
-      // Kamera resmi KAYBETTİĞİNDE videoyu durdur
+      // 4. Kamera resmi KAYBETTİĞİNDE
       target.addEventListener("targetLost", event => {
+        isTargetFound = false;
         video.pause();
       });
     </script>
