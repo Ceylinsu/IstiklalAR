@@ -6,40 +6,34 @@
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
-      #startButton {
+      #startButton, #unmuteButton {
         position: absolute;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
         padding: 15px 30px;
         font-size: 20px;
-        background-color: #e74c3c;
         color: white;
         border: none;
         border-radius: 10px;
         z-index: 9999;
         cursor: pointer;
       }
-      /* iPhone'da kullanıcıya ne yapacağını söyleyen ufak bir bilgi yazısı */
-      #iosWarning {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(0,0,0,0.7);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-family: sans-serif;
-        text-align: center;
-        z-index: 9998;
-        display: none; /* Başlangıçta gizli */
+      #startButton {
+        background-color: #e74c3c; /* Kırmızı başlama butonu */
+      }
+      #unmuteButton {
+        display: none; /* Başlangıçta gizli tutuyoruz */
+        background-color: #27ae60; /* Yeşil sesi aç butonu */
+        bottom: 50px; /* Ekranda biraz daha yukarıda dursun */
+        font-weight: bold;
       }
     </style>
   </head>
   <body>
-    <button id="startButton">Kamerayı Aç ve Başla</button>
-    <div id="iosWarning">Eğer ses gelmezse ekrana bir kez dokunun.</div>
+    <button id="startButton">Kamerayı Aç</button>
+    
+    <button id="unmuteButton">Sesi Aç 🔊</button>
 
     <a-scene mindar-image="imageTargetSrc: ./resim_video/targets.mind; autoStart: false;" 
              color-space="sRGB" 
@@ -48,63 +42,50 @@
              device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="akif-video" src="./resim_video/akif.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="akif-video" src="./resim_video/akif.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane material="src: #akif-video" position="0 0 0" height="1.2" width="1"></a-plane>
+        <a-video src="#akif-video" position="0 0 0" height="1.2" width="1"></a-video>
       </a-entity>
     </a-scene>
 
     <script>
       const sceneEl = document.querySelector('a-scene');
       const startButton = document.querySelector('#startButton');
-      const iosWarning = document.querySelector('#iosWarning');
+      const unmuteButton = document.querySelector('#unmuteButton');
       const target = document.querySelector('[mindar-image-target]');
       const video = document.querySelector('#akif-video');
-      
-      let isTargetFound = false;
 
-      // 1. Başla butonuna tıklama olayı
+      // 1. Kamerayı Başlat Butonu
       startButton.addEventListener('click', () => {
-        // iOS kilidini kırmak için doğrudan bir kez başlatıp durduruyoruz
-        video.play();
-        setTimeout(() => { video.pause(); }, 100);
-
         sceneEl.setAttribute('mindar-image', 'imageTargetSrc: ./resim_video/targets.mind; autoStart: true;');
-        sceneEl.systems["mindar-image-system"].start(); // AR'ı başlat
-        startButton.style.display = 'none'; // Butonu gizle
-        iosWarning.style.display = 'block'; // Uyarı yazısını göster
+        sceneEl.systems["mindar-image-system"].start();
+        startButton.style.display = 'none'; // Kamerayı açtıktan sonra bu butonu gizle
       });
 
-      // 2. Kullanıcı ekrana herhangi bir yere dokunduğunda (iOS'ta sesi zorla açmak için)
-      window.addEventListener('touchstart', () => {
-        if (isTargetFound) {
-          video.muted = false;
-          video.play();
-        }
-      });
-
-      window.addEventListener('click', () => {
-        if (isTargetFound) {
-          video.muted = false;
-          video.play();
-        }
-      });
-
-      // 3. Kamera resmi YAKALADIĞINDA
+      // 2. Kamera Mehmet Akif'i Gördüğünde!
       target.addEventListener("targetFound", event => {
-        isTargetFound = true;
-        video.play();
-        iosWarning.style.display = 'none'; // Resim bulununca uyarıyı gizle
+        video.play(); // Video mecburen sessiz başlar
+        
+        // Eğer video hala sessizse "Sesi Aç" butonunu ekranda göster
+        if(video.muted) {
+            unmuteButton.style.display = 'block'; 
+        }
       });
 
-      // 4. Kamera resmi KAYBETTİĞİNDE
+      // 3. Kamera Resmi Kaybettiğinde
       target.addEventListener("targetLost", event => {
-        isTargetFound = false;
         video.pause();
+        unmuteButton.style.display = 'none'; // Sesi aç butonunu sakla
+      });
+
+      // 4. KULLANICI SESİ AÇ BUTONUNA BASTIĞINDA (İşte büyü burada gerçekleşiyor)
+      unmuteButton.addEventListener('click', () => {
+        video.muted = false; // Ses kilidini aç
+        unmuteButton.style.display = 'none'; // Görevini tamamlayan butonu gizle
       });
     </script>
   </body>
